@@ -2,6 +2,9 @@
 
 一款运行在 Android 平台上的 AI 辅助代码编辑器，采用 Jetpack Compose + Material 3 构建，集成本地大模型推理与云端 LLM API，具备完整的 IDE 基础功能。
 
+**原作者**：[Evilgodxu](https://github.com/Evilgodxu)  
+**当前维护**：[PFLcoolme](https://github.com/PFLcoolme)
+
 ## 功能特性
 
 - **三栏 IDE 布局** — 侧边栏 + 代码编辑器 + AI 协作面板
@@ -347,7 +350,7 @@ KEY_PASSWORD=your_password
 1. 克隆仓库
 
 ```bash
-git clone https://github.com/Evilgodxu/Android-AI-IDE.git
+git clone git@github.com:PFLcoolme/autodroid-core.git
 ```
 
 2. 使用 Android Studio 打开项目

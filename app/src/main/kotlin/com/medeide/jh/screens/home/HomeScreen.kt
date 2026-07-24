@@ -196,6 +196,7 @@ fun HomeScreen() {
     var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
     var lastBackPressed by remember { mutableLongStateOf(0L) }
     val audioPlaybackState = homeViewModel.audioPlaybackState
+    val enabledPlugins by homeViewModel.enabledPlugins.collectAsState(initial = emptySet())
     var scannedAudioTracks by remember { mutableStateOf<List<AudioTrack>>(emptyList()) }
     var scanned by remember { mutableStateOf(false) }
 
@@ -241,6 +242,21 @@ fun HomeScreen() {
     }
 
     val chatState by chatViewModel.state.collectAsState()
+
+    // 插件禁用时自动关闭相关 tab
+    LaunchedEffect(enabledPlugins) {
+        val wasTerminalOpen = workspaceTabs.any { it.id == "terminal" }
+        val wasSearchOpen = selectedTab == SidebarTab.Search
+        if (wasTerminalOpen && "medeide-terminal" !in enabledPlugins) {
+            workspaceTabs = workspaceTabs.filter { it.id != "terminal" }
+            if (workspaceActiveIndex >= workspaceTabs.size) {
+                workspaceActiveIndex = (workspaceTabs.size - 1).coerceAtLeast(-1)
+            }
+        }
+        if (wasSearchOpen && "medeide-search" !in enabledPlugins) {
+            selectedTab = null
+        }
+    }
 
     // 跟踪编辑器/工作目录状态变化，更新实时上下文
     val isProjectMode = fileBrowserRoot != storageRoot
@@ -372,6 +388,7 @@ fun HomeScreen() {
                     onLoadModel = onLoadModel,
                     onSwitchCloudProfile = { chatViewModel.switchCloudProfile(it) },
                     onBrowseModelFile = { modelFilePickerLauncher.launch(arrayOf("application/octet-stream", "*/*")) },
+                    enabledPlugins = enabledPlugins,
                 )
             } else {
                 PortraitTopBar(
@@ -423,7 +440,8 @@ fun HomeScreen() {
                         selectedTab = selectedTab,
                         onTabClick = { tab ->
                             selectedTab = if (selectedTab == tab) null else tab
-                        }
+                        },
+                        enabledPlugins = enabledPlugins,
                     )
                 },
                 sidePanel = {
@@ -469,7 +487,7 @@ fun HomeScreen() {
                         searchState = searchState,
                     )
                 },
-                isSidePanelVisible = selectedTab != null,
+                isSidePanelVisible = selectedTab != null && (selectedTab != SidebarTab.Search || "medeide-search" in enabledPlugins),
                 sidePanelWidth = when (selectedTab) {
                     SidebarTab.Search -> 180.dp
                     else -> 360.dp

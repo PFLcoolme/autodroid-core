@@ -5,6 +5,7 @@ import android.os.Environment
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.medeide.jh.core.data.logging.FileLogger
+import com.medeide.jh.core.data.repository.ContextCollector
 import com.medeide.jh.core.data.repository.ConversationRepository
 import com.medeide.jh.core.data.repository.UserPreferencesRepository
 import com.medeide.jh.core.data.repository.UsageAnalyticsRepository
@@ -45,6 +46,7 @@ class CloudChatViewModel(
     private val conversationRepo: ConversationRepository,
     private val cloudLLMClient: CloudLLMClient,
     private val usageAnalyticsRepository: UsageAnalyticsRepository,
+    private val contextCollector: ContextCollector? = null,
 ) : ViewModel() {
 
     private val aiToolSet = AIToolSet(
@@ -66,6 +68,8 @@ class CloudChatViewModel(
         loadConversations()
         loadChatMode()
         loadAiBehavior()
+        // 启动对话清理（保留最近 50 条）
+        viewModelScope.launch { conversationRepo.cleanup(50) }
     }
 
     private fun loadPreferences() {
@@ -168,6 +172,31 @@ class CloudChatViewModel(
         _state.update { it.copy(projectRoot = path) }
     }
 
+    /** 更新当前打开的文件列表并采集上下文 */
+    fun setOpenedFiles(paths: List<String>) {
+        _state.update { it.copy(openFilePaths = paths) }
+    }
+
+    /** 设置当前编辑的文件并采集上下文（含文件内容） */
+    fun setEditingFile(filePath: String, projectRoot: String) {
+        if (contextCollector == null) return
+        val openPaths = _state.value.openFilePaths.toList() + filePath
+        viewModelScope.launch {
+            try {
+                val context = contextCollector.buildContext(filePath, projectRoot, openPaths)
+                _state.update {
+                    val updatedConvs = it.conversations.map { conv ->
+                        if (conv.id == it.activeConversationId) conv.copy(context = context) else conv
+                    }
+                    it.copy(conversations = updatedConvs)
+                }
+                FileLogger.i("ChatVM", "context updated: file=${context.fileName} size=${context.fileContentSummary?.length ?: 0}")
+            } catch (e: Exception) {
+                FileLogger.e("ChatVM", "setEditingFile context collect failed", e)
+            }
+        }
+    }
+
     fun cancelSend() {
         currentToken?.cancel()
         currentToken = null
@@ -240,13 +269,7 @@ class CloudChatViewModel(
             var msgs = _state.value.messages + userMsg
             updateConvMsgs(convId, msgs)
             val startTime = System.currentTimeMillis()
-            val systemPrompt = buildString {
-                val un = _state.value.userName.ifEmpty { "用户" }
-                val an = _state.value.agentName
-                append("你的名字是「$an」，你是一个 AI 编程助手，帮助用户解决编程问题。用户的名字是「$un」。在回复时请使用你的名字「$an」自称，使用「$un」称呼用户。")
-                val ctx = _state.value.editorContext
-                if (ctx.isNotBlank()) append("\n\n${ctx}")
-            }
+            val systemPrompt = buildSystemPrompt(profile, _state.value.editorContext)
 
             // 工具调用循环（max 20 rounds）
             var round = 0
@@ -481,6 +504,35 @@ class CloudChatViewModel(
         }
     }
     fun clearError() { _state.update { it.copy(engineErrorMessage = "") } }
+
+    /** 构建系统提示词：基础信息 + 编辑器上下文 + 文件上下文 */
+    private fun buildSystemPrompt(profile: CloudModelProfile, editorContext: String): String = buildString {
+        val un = _state.value.userName.ifEmpty { "用户" }
+        val an = _state.value.agentName
+        append("你的名字是「$an」，你是一个 AI 编程助手，帮助用户解决编程问题。用户的名字是「$un」。在回复时请使用你的名字「$an」自称，使用「$un」称呼用户。")
+        append("\n\n模型配置：")
+        append("\n- 模型：${profile.modelName}")
+        append("\n- 上下文窗口：${profile.contextWindow} tokens")
+        val ctx = editorContext
+        if (ctx.isNotBlank()) append("\n\n${ctx}")
+
+        // 注入上下文信息
+        val activeConv = _state.value.conversations.find { it.id == _state.value.activeConversationId }
+        val context = activeConv?.context
+        if (context != null) {
+            append("\n\n[上下文信息] 当前打开的文件：")
+            append("\n- 路径：${context.filePath ?: "未知"}")
+            context.fileName?.let { append("\n- 文件名：$it") }
+            if (context.openFiles.isNotEmpty()) {
+                append("\n- 其他已打开文件：")
+                context.openFiles.forEach { f -> append("\n  · ${f.name} (${f.path})") }
+            }
+            context.projectRoot?.let { append("\n- 项目根目录：$it") }
+            context.fileContentSummary?.let {
+                append("\n\n[文件内容摘要（前2000行）]\n$it")
+            }
+        }
+    }
 
     // ── AI 行为设置 ──
 

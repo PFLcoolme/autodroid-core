@@ -167,6 +167,8 @@
     <string name="settings_role">Role</string>
     <string name="settings_cloud_model">Cloud Model</string>
     <string name="settings_local_model">Local Model</string>
+    <string name="settings_plugins">Plugins</string>
+    <string name="settings_plugin_market">Plugin Market</string>
     <string name="settings_theme_title">Theme Settings</string>
     <string name="settings_language_title">Language Settings</string>
     <string name="settings_need_init_chat">Need to initialize chat view</string>

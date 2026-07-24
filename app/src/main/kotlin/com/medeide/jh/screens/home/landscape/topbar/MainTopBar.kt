@@ -63,6 +63,7 @@ fun MainTopBar(
     onFindReplace: () -> Unit = {},
     // 终端
     onTerminal: () -> Unit = {},
+    enabledPlugins: Set<String> = emptySet(),
     // 最近文件
     recentFiles: List<RecentFileEntry> = emptyList(),
     onOpenRecentFile: (RecentFileEntry) -> Unit = {},
@@ -148,20 +149,22 @@ fun MainTopBar(
                         color = MaterialTheme.colorScheme.outlineVariant
                     )
 
-                    Text(
-                        text = "终端",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                            .clickable { onTerminal() }
-                    )
+                    if ("medeide-terminal" in enabledPlugins) {
+                        Text(
+                            text = "终端",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .clickable { onTerminal() }
+                        )
 
-                    Text(
-                        text = "丨",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.outlineVariant
-                    )
+                        Text(
+                            text = "丨",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.outlineVariant
+                        )
+                    }
 
                     Box {
                         Text(

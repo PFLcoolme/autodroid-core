@@ -71,7 +71,7 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 private enum class SettingsTab(@StringRes val labelRes: Int) {
-    General(R.string.settings_general), Role(R.string.settings_role), CloudModel(R.string.settings_cloud_model), Model(R.string.settings_local_model),
+    General(R.string.settings_general), Role(R.string.settings_role), CloudModel(R.string.settings_cloud_model), Model(R.string.settings_local_model), Plugins(R.string.settings_plugins), PluginMarket(R.string.settings_plugin_market),
 }
 
 @Composable
@@ -85,7 +85,7 @@ fun SettingsPane(modifier: Modifier = Modifier) {
     val rules by userPrefs.rules.collectAsState(initial = emptyList())
     val activeRoleId by userPrefs.activeRoleId.collectAsState(initial = "")
 
-    var tab by remember { mutableStateOf(SettingsTab.General) }
+    var tab by remember { mutableStateOf<SettingsTab>(SettingsTab.General) }
 
     Row(modifier = modifier.fillMaxSize()) {
         Column(
@@ -124,6 +124,12 @@ fun SettingsPane(modifier: Modifier = Modifier) {
                         CloudModelSettingsContent(viewModel = cloudViewModel, modifier = Modifier.fillMaxWidth())
                     }
                     SettingsTab.Model -> SettingsLocalModelContent(viewModel = localViewModel)
+                    SettingsTab.Plugins -> com.medeide.jh.screens.home.landscape.workspace.settings.plugin.PluginSettingsScreen(
+                        onNavigateToDetail = {}
+                    )
+                    SettingsTab.PluginMarket -> com.medeide.jh.screens.home.landscape.workspace.settings.plugin.PluginMarketScreen(
+                        viewModel = koinViewModel(),
+                    )
                 }
             }
         }

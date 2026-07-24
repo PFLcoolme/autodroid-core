@@ -28,8 +28,16 @@ enum class SidebarTab {
 fun Sidebar(
     selectedTab: SidebarTab?,
     onTabClick: (SidebarTab) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabledPlugins: Set<String> = emptySet(),
 ) {
+    val tabs = buildList {
+        add(SidebarTab.Explorer)
+        if ("medeide-search" in enabledPlugins) add(SidebarTab.Search)
+    }
+
+    if (tabs.isEmpty()) return
+
     Surface(
         modifier = modifier
             .width(48.dp)
@@ -43,18 +51,22 @@ fun Sidebar(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            SidebarItem(
-                icon = Icons.Default.Folder,
-                contentDescription = "文件浏览",
-                isSelected = selectedTab == SidebarTab.Explorer,
-                onClick = { onTabClick(SidebarTab.Explorer) }
-            )
-            SidebarItem(
-                icon = Icons.Default.Search,
-                contentDescription = "搜索替换",
-                isSelected = selectedTab == SidebarTab.Search,
-                onClick = { onTabClick(SidebarTab.Search) }
-            )
+            tabs.forEach { tab ->
+                when (tab) {
+                    SidebarTab.Explorer -> SidebarItem(
+                        icon = Icons.Default.Folder,
+                        contentDescription = "文件浏览",
+                        isSelected = selectedTab == tab,
+                        onClick = { onTabClick(tab) }
+                    )
+                    SidebarTab.Search -> SidebarItem(
+                        icon = Icons.Default.Search,
+                        contentDescription = "搜索替换",
+                        isSelected = selectedTab == tab,
+                        onClick = { onTabClick(tab) }
+                    )
+                }
+            }
         }
     }
 

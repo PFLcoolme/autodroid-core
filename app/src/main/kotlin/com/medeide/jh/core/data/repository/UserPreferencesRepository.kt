@@ -44,6 +44,8 @@ class UserPreferencesRepository(private val context: Context) {
         val AGENT_NAME = stringPreferencesKey("agent_name")
         val AGENT_AVATAR_URI = stringPreferencesKey("agent_avatar_uri")
         val RECENT_FILES_JSON = stringPreferencesKey("recent_files_json")
+        val ENABLED_PLUGINS_JSON = stringPreferencesKey("enabled_plugins_json")
+        val PLUGIN_CONFIGS_JSON = stringPreferencesKey("plugin_configs_json")
     }
 
     val themeMode: Flow<String> = context.dataStore.data.map { it[PreferencesKeys.THEME_MODE] ?: "system" }
@@ -239,6 +241,67 @@ class UserPreferencesRepository(private val context: Context) {
                 )
             }
         } catch (_: Exception) { emptyList() }
+    }
+
+    val enabledPlugins: Flow<Set<String>> = context.dataStore.data.map { prefs ->
+        val json = prefs[PreferencesKeys.ENABLED_PLUGINS_JSON] ?: return@map emptySet()
+        try {
+            val arr = JSONArray(json)
+            val set = mutableSetOf<String>()
+            for (i in 0 until arr.length()) {
+                set += arr.optString(i)
+            }
+            set
+        } catch (_: Exception) { emptySet() }
+    }
+
+    suspend fun setEnabledPlugins(ids: Set<String>) {
+        context.dataStore.edit { prefs ->
+            val arr = JSONArray()
+            ids.sorted().forEach { arr.put(it) }
+            prefs[PreferencesKeys.ENABLED_PLUGINS_JSON] = arr.toString()
+        }
+    }
+
+    suspend fun togglePlugin(pluginId: String, enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            val json = prefs[PreferencesKeys.ENABLED_PLUGINS_JSON] ?: "[]"
+            val arr = JSONArray(json)
+            val set = mutableSetOf<String>()
+            for (i in 0 until arr.length()) set += arr.optString(i)
+            if (enabled) set += pluginId else set -= pluginId
+            val newArr = JSONArray()
+            set.sorted().forEach { newArr.put(it) }
+            prefs[PreferencesKeys.ENABLED_PLUGINS_JSON] = newArr.toString()
+        }
+    }
+
+    val pluginConfigs: Flow<Map<String, Map<String, String>>> = context.dataStore.data.map { prefs ->
+        val json = prefs[PreferencesKeys.PLUGIN_CONFIGS_JSON] ?: return@map emptyMap()
+        try {
+            val obj = JSONObject(json)
+            val result = mutableMapOf<String, Map<String, String>>()
+            obj.keys().forEach { pluginId ->
+                val configObj = obj.getJSONObject(pluginId)
+                val configMap = mutableMapOf<String, String>()
+                configObj.keys().forEach { key ->
+                    configMap[key] = configObj.getString(key)
+                }
+                result[pluginId] = configMap
+            }
+            result
+        } catch (_: Exception) { emptyMap() }
+    }
+
+    suspend fun setPluginConfig(pluginId: String, key: String, value: String) {
+        context.dataStore.edit { prefs ->
+            val json = prefs[PreferencesKeys.PLUGIN_CONFIGS_JSON] ?: "{}"
+            val obj = JSONObject(json)
+            val pluginConfig = if (obj.has(pluginId)) obj.getJSONObject(pluginId) else JSONObject()
+            pluginConfig.put(key, value)
+            obj.put(pluginId, pluginConfig)
+            prefs[PreferencesKeys.PLUGIN_CONFIGS_JSON] = obj.toString()
+        }
     }
 
     suspend fun addRecentFile(entry: RecentFileEntry) {

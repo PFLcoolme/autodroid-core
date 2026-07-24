@@ -185,6 +185,8 @@
     <string name="settings_role">角色定义</string>
     <string name="settings_cloud_model">云端模型</string>
     <string name="settings_local_model">本地模型</string>
+    <string name="settings_plugins">插件管理</string>
+    <string name="settings_plugin_market">插件市场</string>
     <string name="settings_theme_title">主题设置</string>
     <string name="settings_language_title">语言设置</string>
     <string name="settings_need_init_chat">需要初始化聊天视图</string>

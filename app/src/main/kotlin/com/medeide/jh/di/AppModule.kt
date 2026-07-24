@@ -1,5 +1,9 @@
 package com.medeide.jh.di
 
+import com.medeide.jh.core.data.remote.PluginAssetManager
+import com.medeide.jh.core.data.remote.PluginMarketClient
+import com.medeide.jh.core.data.remote.RemotePluginManager
+import com.medeide.jh.core.data.repository.ContextCollector
 import com.medeide.jh.core.data.repository.ConversationRepository
 import com.medeide.jh.core.data.repository.UserPreferencesRepository
 import com.medeide.jh.core.data.repository.UsageAnalyticsRepository
@@ -11,6 +15,8 @@ import com.medeide.jh.screens.home.cloudchat.CloudChatViewModel
 import com.medeide.jh.screens.home.data.repository.HomeRepository
 import com.medeide.jh.screens.home.domain.usecase.GetThemeModeUseCase
 import com.medeide.jh.screens.home.localchat.LocalChatViewModel
+import com.medeide.jh.screens.home.landscape.workspace.settings.plugin.PluginMarketViewModel
+import com.medeide.jh.screens.home.landscape.workspace.settings.plugin.PluginSettingsViewModel
 import com.medeide.jh.screens.permission.PermissionGuideViewModel
 import com.medeide.jh.screens.permission.data.PermissionMonitor
 import org.koin.android.ext.koin.androidContext
@@ -23,15 +29,21 @@ val appModule = module {
     single { GetThemeModeUseCase(get()) }
     single { PermissionMonitor(androidContext()) }
     single { ConversationRepository(androidContext()) }
+    single { ContextCollector(androidContext()) }
     single { CloudLLMClient() }
     single { UsageAnalyticsRepository(androidContext()) }
+    single { PluginMarketClient() }
+    single { PluginAssetManager(androidContext()) }
+    single { RemotePluginManager(androidContext(), get(), get(), get()) }
 
     // LiteRT-LM 本地模型服务
     single { LiteRTEngineManager(androidContext()) }
     single { LiteRTModelRepository(androidContext()) }
 
-    viewModel { HomeViewModel(get()) }
+    viewModel { HomeViewModel(get(), get()) }
     viewModel { PermissionGuideViewModel(get(), get()) }
-    viewModel { CloudChatViewModel(get(), get(), get(), get()) }
+    viewModel { CloudChatViewModel(get(), get(), get(), get(), get()) }
     viewModel { LocalChatViewModel(get(), get(), get(), get()) }
+    viewModel { PluginSettingsViewModel(get()) }
+    viewModel { PluginMarketViewModel(get(), get(), get()) }
 }

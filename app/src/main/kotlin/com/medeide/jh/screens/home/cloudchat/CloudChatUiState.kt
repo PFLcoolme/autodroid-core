@@ -40,6 +40,8 @@ data class CloudChatUiState(
     // 用户/Agent 名称
     val userName: String = "",
     val agentName: String = "AI",
+    // 当前打开的文件列表（用于上下文采集）
+    val openFilePaths: List<String> = emptyList(),
 ) {
     val activeProfile: CloudModelProfile?
         get() = cloudModelProfiles.find { it.id == activeCloudProfileId }

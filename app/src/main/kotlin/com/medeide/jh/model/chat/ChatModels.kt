@@ -33,6 +33,7 @@ data class ConversationEntry(
     val id: String = UUID.randomUUID().toString(),
     val title: String,
     val messages: List<ChatMessage> = emptyList(),
+    val context: com.medeide.jh.model.ChatContext? = null,
     val timestamp: Long = System.currentTimeMillis(),
 )
 
